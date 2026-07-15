@@ -1,0 +1,35 @@
+<!-- =========================================================
+     SLIPMAT MAP GENERATOR  (Weblium custom HTML block)
+     Auto-generated from blocks/slipmat-generator/src/.
+     Do NOT edit blocks/slipmat-generator/dist/index.html by hand —
+     run `npm run build` after editing sources.
+     ========================================================= -->
+<style>
+{{STYLES}}
+</style>
+
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.2/mapbox-gl-geocoder.css">
+
+<div class="sm-wrap">
+  <div id="sm-map" class="sm-map"></div>
+
+  <div class="sm-side">
+    <div class="sm-preview-wrap">
+      <img id="sm-preview-img" class="sm-preview-img" alt="">
+      <div class="sm-preview-mask"></div>
+      <div class="sm-spindle"></div>
+    </div>
+    <div id="sm-geocoder" class="sm-geocoder"></div>
+    <button id="sm-generate" class="sm-btn" type="button">Згенерувати макет</button>
+  </div>
+</div>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.2/mapbox-gl-geocoder.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<script>window.SLIPMAT_CONFIG = {{CONFIG_JSON}};</script>
+<script>
+{{SCRIPT}}
+</script>

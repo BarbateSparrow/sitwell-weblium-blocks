@@ -1,0 +1,154 @@
+/* === КАСТОМНІ СТИЛІ === */
+:root {
+  --slipmat-accent: #111;
+  --slipmat-btn-bg: #111;
+  --slipmat-btn-fg: #fff;
+  --slipmat-mask: rgba(255, 255, 255, 0.55);
+  --slipmat-border: #e5e5e5;
+
+  /* Heights of Sitwell site header & footer (tweak if your theme changes) */
+  --sitwell-header-h: 78px;
+  --sitwell-footer-h: 280px;
+
+  /* Uniform padding around the round preview inside the right column */
+  --slipmat-side-pad: 20px;
+}
+
+.sm-wrap {
+  display: grid;
+  grid-template-columns: 80% 20%;
+  gap: 0;
+  align-items: stretch;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+  color: #111;
+  height: calc(100vh - var(--sitwell-header-h) - var(--sitwell-footer-h));
+  min-height: 520px;
+}
+
+/* LEFT: map fills 80% column, square corners */
+.sm-map {
+  width: 100%;
+  height: 100%;
+  background: #f4f4f4;
+  overflow: hidden;
+  border: 1px solid var(--slipmat-border);
+  border-right: none;
+}
+.sm-map .mapboxgl-canvas {
+  outline: none;
+}
+
+/* RIGHT column (20%): stack preview + search + button, centered as group */
+.sm-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-width: 0;
+  padding: var(--slipmat-side-pad);
+  box-sizing: border-box;
+  border: 1px solid var(--slipmat-border);
+}
+
+/* All inner controls span the full available width of the column (minus padding) */
+.sm-preview-wrap,
+.sm-geocoder,
+.sm-btn {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Round preview wrapper — square, equal padding on all sides via column padding */
+.sm-preview-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: #f4f4f4;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--slipmat-border);
+}
+.sm-preview-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sm-preview-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, transparent 58%, var(--slipmat-mask) 60%);
+  pointer-events: none;
+}
+.sm-spindle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid #111;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Search (geocoder) — full width of column */
+.sm-geocoder .mapboxgl-ctrl-geocoder {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-shadow: none;
+  border: 1px solid var(--slipmat-border);
+  border-radius: 0;
+  font-family: inherit;
+}
+.sm-geocoder .mapboxgl-ctrl-geocoder--input {
+  height: 44px;
+  font-size: 14px;
+  padding: 6px 12px 6px 36px;
+}
+
+/* Generate button — full width of column, no radius */
+.sm-btn {
+  height: 48px;
+  border: none;
+  border-radius: 0;
+  background: var(--slipmat-btn-bg);
+  color: var(--slipmat-btn-fg);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.sm-btn:hover {
+  opacity: 0.88;
+}
+.sm-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 860px) {
+  .sm-wrap {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+  .sm-map {
+    height: 70vw;
+    min-height: 320px;
+    border-right: 1px solid var(--slipmat-border);
+  }
+  .sm-side {
+    border-top: none;
+  }
+}

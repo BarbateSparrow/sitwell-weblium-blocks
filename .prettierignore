@@ -1,0 +1,6 @@
+node_modules
+blocks/*/dist
+blocks/*/src/template.html
+package-lock.json
+*.md
+.env
