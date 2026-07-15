@@ -9,6 +9,16 @@ Embedded on https://sitwell.com.ua/slipmats#services (Weblium "Embed code" block
 - Side column shows a live round preview (via Mapbox Static Images API, mirrors
   the interactive map including bearing/pitch), a geocoder search field, and a
   "Згенерувати макет" button.
+- The preview is intentionally rendered at a lower zoom than the live map so
+  that it covers the SAME geographic area as the exported PDF. The PDF stitches
+  4 static tiles in a 2×2 grid (each tile 1280 logical px per side), so the
+  composite covers `2 × 1280 = 2560` logical px per side at the current zoom.
+  A single preview request is 600 logical px per side. To match coverage we
+  need to zoom out by `log2(2560 / 600) ≈ 2.09` zoom levels. The exact offset
+  is derived at runtime from the tile-size and preview-size constants
+  (`PREVIEW_ZOOM_OFFSET` in `script.js`), so it stays correct if either is
+  changed. Without this offset, the preview showed only the centre quarter of
+  what would actually appear on the printed slipmat.
 - On generate, downloads a **print-ready PDF**:
   - 310 × 310 mm, includes bleed
   - Circular map area, transparent background outside the circle (saves ink)
@@ -39,7 +49,19 @@ Non-secret values live in [`config.json`](./config.json):
 | `start_zoom`            | Initial zoom                                    |
 
 `MAPBOX_TOKEN` is read from the repo-level `.env` at build time and injected
-as `window.SLIPMAT_CONFIG.MAPBOX_TOKEN` in the built `dist/index.html`.
+as `window.SLIPMAT_CONFIG.MAPBOX_TOKEN` into the built `dist/weblium.js` file.
+
+## Publishing to Weblium
+
+The Weblium **Custom Code** block used on the live page has three tabs:
+Code snippet / HTML, CSS / LESS, and JS. After running `npm run build:slipmat`,
+paste each generated file into its matching tab:
+
+- `dist/weblium.html` → **Code snippet / HTML**
+- `dist/weblium.css`  → **CSS / LESS**
+- `dist/weblium.js`   → **JS**
+
+Save, then Publish the page.
 
 ## Runtime config contract
 

@@ -53,6 +53,16 @@
   var TILE_HALF = TILE_LOGICAL_SIZE / 2; // 640 — center offset for stitching
   var COMPOSITE_SIZE = TILE_PHYSICAL_SIZE * 2; // 5120
 
+  // Preview geometry
+  var PREVIEW_SIZE = 600; // logical px per preview side (single tile, no stitching)
+  // Composite covers 2 tiles × TILE_LOGICAL_SIZE = 2560 logical px per side.
+  // Preview covers PREVIEW_SIZE logical px per side.
+  // To make the preview cover the same geographic area at zoom Z_preview as the
+  // PDF at zoom Z_map, we need:  PREVIEW_SIZE * mpp(Z_preview) = 2560 * mpp(Z_map)
+  // Since mpp doubles per unit of zoom decrease, Z_preview = Z_map - log2(2560/600)
+  //   log2(2560 / 600) = log2(4.2667) ≈ 2.0931
+  var PREVIEW_ZOOM_OFFSET = Math.log2((TILE_LOGICAL_SIZE * 2) / PREVIEW_SIZE);
+
   // Web Mercator (EPSG:3857)
   var EARTH_CIRCUMFERENCE = 40075016.686;
   var EARTH_RADIUS = 6378137;
@@ -129,6 +139,11 @@
 
   function staticPreviewUrl() {
     var c = map.getCenter();
+    // Preview zoom is shifted by PREVIEW_ZOOM_OFFSET (≈ 2.09) so the round
+    // preview covers the SAME geographic area as the exported PDF. See the
+    // PREVIEW_ZOOM_OFFSET definition above for the derivation. Clamp to 0 so
+    // extremely-zoomed-out views don't produce a negative zoom.
+    var previewZoom = Math.max(0, map.getZoom() - PREVIEW_ZOOM_OFFSET);
     return (
       'https://api.mapbox.com/styles/v1/' +
       SITWELL_STYLE_STATIC +
@@ -137,12 +152,16 @@
       ',' +
       c.lat.toFixed(6) +
       ',' +
-      map.getZoom().toFixed(2) +
+      previewZoom.toFixed(2) +
       ',' +
       map.getBearing().toFixed(2) +
       ',' +
       map.getPitch().toFixed(2) +
-      '/600x600?access_token=' +
+      '/' +
+      PREVIEW_SIZE +
+      'x' +
+      PREVIEW_SIZE +
+      '?access_token=' +
       MAPBOX_TOKEN +
       '&attribution=false&logo=false'
     );
