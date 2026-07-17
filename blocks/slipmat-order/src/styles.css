@@ -44,6 +44,12 @@
   height: 100%;
   background: #101010;
 }
+/* Hairline frame so the dark map reads as a distinct panel against the
+   near-black page. Outer box-shadow paints outside the box, so the map
+   canvas (absolute, inset:0) never covers it. */
+.so-map-section {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
 .so-map .mapboxgl-canvas {
   outline: none;
 }
@@ -114,6 +120,22 @@
   background: #101010;
   border-radius: 50%;
   overflow: hidden;
+  /* Edge highlight (reads as the physical felt rim) + soft depth so the
+     circle lifts off the near-black page. Outer shadows — not covered by
+     the absolutely-positioned image inside. */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+}
+/* Inner vignette painted ABOVE the image (the img covers the wrap's own
+   background, so an inset shadow on .so-preview-wrap would be hidden). */
+.so-preview-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: inset 0 0 55px rgba(0, 0, 0, 0.5);
 }
 .so-preview-img {
   position: absolute;
@@ -140,6 +162,11 @@
   font-size: 14px;
   color: var(--so-muted);
 }
+/* Caption under the slipmat preview — larger than the helper .so-note used
+   elsewhere (e.g. the delivery fallback note, which stays 14px). */
+.so-preview-col .so-note {
+  font-size: 18px;
+}
 .so-price {
   margin: 4px 0 0;
   font-family: var(--so-font-head);
@@ -164,7 +191,7 @@
   align-items: flex-start;
 }
 .so-label {
-  font-size: 15px;
+  font-size: 18px;
   color: var(--so-fg);
 }
 .so-label b {

@@ -752,11 +752,13 @@
     errorEl.textContent = '';
     errorEl.hidden = true;
   }
-  // Plausible Ukrainian phone: strip spaces/()/-, then require 10–13 digits with
-  // an optional leading +. Covers 0XXXXXXXXX and +380XXXXXXXXX.
+  // Ukrainian mobile: strip everything but digits, then require exactly one of
+  //   0XXXXXXXXX   (10 digits, national)   e.g. 0953206794
+  //   380XXXXXXXXX (12 digits, +380 form)  e.g. +380953206794
+  // The old 10–13 range let malformed numbers like 09532067949 through.
   function validatePhone(raw) {
-    var cleaned = raw.replace(/[\s()\-]/g, '');
-    return /^\+?\d{10,13}$/.test(cleaned);
+    var d = raw.replace(/\D/g, '');
+    return /^0\d{9}$/.test(d) || /^380\d{9}$/.test(d);
   }
   function validate() {
     clearError();
@@ -779,7 +781,7 @@
       phoneEl.classList.add('so-invalid');
       if (!firstInvalid) {
         firstInvalid = phoneEl;
-        msg = 'Вкажіть коректний номер телефону, напр. +380XXXXXXXXX.';
+        msg = 'Вкажіть коректний номер телефону: 0XXXXXXXXX або +380XXXXXXXXX.';
       }
     }
 
