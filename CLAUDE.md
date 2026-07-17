@@ -151,9 +151,9 @@ free tier is gone). Secrets via `wrangler secret put`: `TURNSTILE_SECRET`,
 `RESEND_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NP_API_KEY`. Local
 dev uses `.dev.vars` (git-ignored). Deploy + setup: `workers/slipmat-order/README.md`.
 
-**Deployment status (2026-07-17) — backend LIVE, block not yet in Weblium:**
+**Deployment status (2026-07-17) — LIVE end-to-end:**
 - Worker deployed: **`https://slipmat-order.sitwell.workers.dev`** (Cloudflare
-  account `Sitwell17@gmail.com`, workers.dev subdomain `sitwell`). Already set as
+  account `Sitwell17@gmail.com`, workers.dev subdomain `sitwell`). Set as
   `order_endpoint` in `config.json`, so the block is **no longer DRY-RUN**.
 - All 5 secrets uploaded (`TURNSTILE_SECRET`, `RESEND_API_KEY`,
   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NP_API_KEY`). NP proxy verified live.
@@ -163,8 +163,10 @@ dev uses `.dev.vars` (git-ignored). Deploy + setup: `workers/slipmat-order/READM
   domain is NOT on Cloudflare and NOT on Weblium — it lives at DNSHosting.org
   (imena.ua): panel `dnshosting.org/domains/sitwell.com.ua`.** Any future
   DNS/email record changes go there, not in the Cloudflare dashboard.
-- Remaining: paste `dist/weblium.{html,css,js}` into the 3 Custom Code tabs on
-  `/slipmats-with-custom-map`, Save → Publish, then place a test order.
+- Block pasted into the 3 Custom Code tabs on `/slipmats-with-custom-map` and
+  published; a test order was received in both Telegram and email (with PDF).
+- After code changes, rebuild (`npm run build:order`) and re-paste only the tabs
+  that changed — the build reports the file sizes so you can tell which moved.
 
 ## Weblium constraints
 
