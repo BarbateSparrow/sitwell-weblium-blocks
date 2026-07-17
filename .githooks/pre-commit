@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+#
+# Block commits that introduce likely secrets into tracked files.
+# Scans only the ADDED lines of the staged diff, so pre-existing content and
+# git-ignored files (.env, dev-server/local-config.js, workers/*/.dev.vars,
+# blocks/*/dist/) are never a problem.
+#
+# Enable once per clone:   git config core.hooksPath .githooks
+# Bypass (rare, deliberate): git commit --no-verify
+#
+set -u
+
+# Secret shapes used in this project. Illustrative/truncated tokens in docs
+# (e.g. "pk.ey...") are too short to match the {20,} tails below, so they pass.
+patterns=(
+  'pk\.eyJ[A-Za-z0-9_-]{20,}'        # Mapbox public token
+  'sk\.eyJ[A-Za-z0-9_-]{20,}'        # Mapbox secret token
+  're_[A-Za-z0-9]{20,}'              # Resend API key
+  '[0-9]{8,10}:[A-Za-z0-9_-]{30,}'   # Telegram bot token
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+)
+
+added="$(git diff --cached --no-color -U0 --diff-filter=ACM | grep -E '^\+' | grep -Ev '^\+\+\+' || true)"
+
+hit=0
+for p in "${patterns[@]}"; do
+  if printf '%s\n' "$added" | grep -Eq -e "$p"; then
+    echo "✖ pre-commit: possible secret matching /$p/ in staged changes." >&2
+    hit=1
+  fi
+done
+
+if [ "$hit" -ne 0 ]; then
+  {
+    echo ""
+    echo "Commit blocked to protect a secret."
+    echo "  → Move it to .env / a wrangler secret / .dev.vars (all git-ignored)."
+    echo "  → False positive? Re-run with:  git commit --no-verify"
+  } >&2
+  exit 1
+fi
+exit 0

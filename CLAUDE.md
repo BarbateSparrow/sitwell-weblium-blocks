@@ -17,6 +17,8 @@ dist/                # GENERATED — do not edit by hand (git-ignored)
 README.md
 scripts/build.js       # zero-dep Node build (fs + string replace)
 dev-server/            # local sandbox loading src/ directly
+workers/<name>/        # Cloudflare Workers (order backend); wrangler + secrets
+.githooks/pre-commit   # secret-scan guard; enable via `git config core.hooksPath .githooks`
 .env                   # git-ignored; holds MAPBOX_TOKEN
 
 ## Golden rules
@@ -31,12 +33,19 @@ dev-server/            # local sandbox loading src/ directly
    `build.js` in production and by `dev-server/local-config.js` in dev.
    If you find yourself pasting `pk.ey...` into a `.js` file, stop.
 
-3. **Never commit `.env` or `dev-server/local-config.js`.** Both contain
-   the live token. They are in `.gitignore`; keep it that way.
+3. **Never commit `.env`, `dev-server/local-config.js`, or
+   `workers/*/.dev.vars`.** All contain live tokens. They are in `.gitignore`;
+   keep it that way. Worker secrets go through `wrangler secret put`, never
+   into tracked files.
 
 4. **`dist/` is git-ignored** because the built file embeds the token.
    To share a build, regenerate it locally with `npm run build` and paste
    into the Weblium "Embed code" block on the corresponding page.
+
+5. **Enable the secret-scan hook once per clone:**
+   `git config core.hooksPath .githooks`. It blocks any commit whose staged
+   diff introduces a Mapbox / Resend / Telegram token or a private key.
+   (We hit GitHub push-protection once already — this prevents a repeat.)
 
 ## Common tasks
 
@@ -51,6 +60,7 @@ Edits to `blocks/<name>/src/*` show up on refresh — no build needed.
 ```bash
 npm run build              # all blocks
 npm run build:slipmat      # just slipmat-generator
+npm run build:order        # just slipmat-order
 ```
 Then copy the entire contents of `blocks/<name>/dist/index.html` into the
 Weblium "Embed code" block.
@@ -103,8 +113,49 @@ with `bearing=0` and `pitch=0`. Non-zero bearing/pitch would produce a
 visible seam at the stitch boundaries. The interactive map on screen may
 still be rotated/tilted — this is intentional, only export is forced flat.
 
-**Roadmap:** Stage 1 (PDF export with pin-hole and marker) is done.
-Stage 2 is order-form integration — see `blocks/slipmat-generator/README.md`.
+**Roadmap:** Stage 1 (PDF export with pin-hole and marker) is done. Stage 2
+(order flow) lives in the separate `slipmat-order` block below — this demo
+generator stays as-is.
+
+### slipmat-order
+
+Stage 2 order variant. Target page (not yet published):
+https://sitwell.com.ua/slipmats-with-custom-map (a duplicate of /slipmats).
+Reuses the Stage 1 geometry/tiles/PDF, but instead of `pdf.save()` it builds a
+Blob and POSTs it to a Cloudflare Worker with the order fields — **the customer
+never downloads the file**.
+
+**UI (dark theme, red accents):** full-width 3:1 interactive map with an 8 px
+centered dot; **"Назва міста" is a geocoder** that names the order and flies the
+map (the customer then fine-tunes the framing — the PDF is the source of truth
+for what prints); round live preview; form (city / name / phone / delivery /
+qty), price `PRICE_UAH` × qty; Turnstile + honeypot; inline thank-you; progress
+states. Submit runs in **DRY-RUN** (logs, no POST) when `ORDER_ENDPOINT` is empty.
+
+**No Weblium native cart.** The Weblium Store cannot be driven from custom code
+(no add-to-cart JS API, no checkout prefill). Ordering is direct-to-Worker and a
+manager handles payment. Do not attempt native-cart integration.
+
+**Extra runtime-config keys (non-secret, in `config.json`):**
+`ORDER_ENDPOINT` (Worker URL), `TURNSTILE_SITE_KEY` (public site key), `PRICE_UAH`.
+
+**Backend:** `workers/slipmat-order/` — Cloudflare Worker (ES module + wrangler).
+Verifies Turnstile + honeypot, then notifies via **Telegram `sendDocument`** and
+**Resend email**, both with the PDF attached (Workers can't SMTP; MailChannels'
+free tier is gone). Secrets via `wrangler secret put`: `TURNSTILE_SECRET`,
+`RESEND_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Local dev uses
+`.dev.vars` (git-ignored). Deploy + setup steps: `workers/slipmat-order/README.md`.
+
+## Weblium constraints
+
+- **3-tab Custom Code.** Weblium's Custom Code block has separate HTML / CSS / JS
+  tabs and mangles inline `<style>`/`<script>` pasted into the HTML tab.
+  `build.js` therefore emits `dist/weblium.html`, `dist/weblium.css`,
+  `dist/weblium.js` (plus `dist/index.html` as a single-file reference). Paste
+  each file into its matching tab, then Save → Publish.
+- **CDN `<script src>` tags must stay in the HTML tab** so the browser loads the
+  deps (mapbox-gl, mapbox-gl-geocoder, jsPDF, Turnstile).
+- **The native Store is isolated** from custom code — see the slipmat-order note.
 
 ## Code style
 
