@@ -4,6 +4,6 @@
   "start_center": [30.5234, 50.4501],
   "start_zoom": 12,
   "price_uah": 1000,
-  "order_endpoint": "",
-  "turnstile_site_key": ""
+  "order_endpoint": "https://slipmat-order.sitwell.workers.dev",
+  "turnstile_site_key": "0x4AAAAAAD35iWskdjKWiCIV"
 }

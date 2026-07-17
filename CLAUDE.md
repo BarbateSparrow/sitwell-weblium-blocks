@@ -148,8 +148,23 @@ manager handles payment. Do not attempt native-cart integration.
 Verifies Turnstile + honeypot, then notifies via **Telegram `sendDocument`** and
 **Resend email**, both with the PDF attached (Workers can't SMTP; MailChannels'
 free tier is gone). Secrets via `wrangler secret put`: `TURNSTILE_SECRET`,
-`RESEND_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`. Local dev uses
-`.dev.vars` (git-ignored). Deploy + setup steps: `workers/slipmat-order/README.md`.
+`RESEND_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NP_API_KEY`. Local
+dev uses `.dev.vars` (git-ignored). Deploy + setup: `workers/slipmat-order/README.md`.
+
+**Deployment status (2026-07-17) — backend LIVE, block not yet in Weblium:**
+- Worker deployed: **`https://slipmat-order.sitwell.workers.dev`** (Cloudflare
+  account `Sitwell17@gmail.com`, workers.dev subdomain `sitwell`). Already set as
+  `order_endpoint` in `config.json`, so the block is **no longer DRY-RUN**.
+- All 5 secrets uploaded (`TURNSTILE_SECRET`, `RESEND_API_KEY`,
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `NP_API_KEY`). NP proxy verified live.
+- Turnstile widget `sitwell-slipmat-order`: site key in `config.json` matches the
+  secret in the Worker (same widget).
+- Resend domain `sitwell.com.ua` = **Verified** (DKIM+MX+SPF). ⚠️ **DNS for the
+  domain is NOT on Cloudflare and NOT on Weblium — it lives at DNSHosting.org
+  (imena.ua): panel `dnshosting.org/domains/sitwell.com.ua`.** Any future
+  DNS/email record changes go there, not in the Cloudflare dashboard.
+- Remaining: paste `dist/weblium.{html,css,js}` into the 3 Custom Code tabs on
+  `/slipmats-with-custom-map`, Save → Publish, then place a test order.
 
 ## Weblium constraints
 
