@@ -170,7 +170,10 @@
 .so-price {
   margin: 4px 0 0;
   font-family: var(--so-font-head);
-  font-size: 34px;
+  /* Match the site's ui-heading size (24px) so the price reads at the same
+     size as the "old" block's "1250 грн / шт" heading, not larger. */
+  font-size: var(--ui-heading-size, 24px);
+  line-height: 1.3;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--so-fg);
