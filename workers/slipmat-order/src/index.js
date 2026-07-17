@@ -27,6 +27,20 @@ export default {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors });
     }
+    // Nova Poshta proxy (GET ?action=np-cities|np-warehouses) — keeps the NP key
+    // server-side. Responses are cached (Cache API) for a day since NP data is
+    // near-static.
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+    if (request.method === 'GET' && action) {
+      const cache = caches.default;
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      const resp = await handleNovaPoshta(action, url, env, cors);
+      if (resp.status === 200) await cache.put(request, resp.clone());
+      return resp;
+    }
+
     if (request.method !== 'POST') {
       return json({ ok: false, error: 'method_not_allowed' }, 405, cors);
     }
@@ -107,7 +121,7 @@ function corsHeaders(request, env) {
   const allowOrigin = allowed ? (originAllowed(origin, allowed) ? origin : allowed) : origin || '*';
   return {
     'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
@@ -141,6 +155,60 @@ async function verifyTurnstile(token, request, env) {
   });
   const data = await res.json().catch(() => ({ success: false }));
   return data.success === true;
+}
+
+// ============================================================================
+//  Nova Poshta proxy
+// ============================================================================
+
+async function handleNovaPoshta(action, url, env, cors) {
+  if (!env.NP_API_KEY) return json({ ok: false, error: 'np_not_configured' }, 501, cors);
+  try {
+    if (action === 'np-cities') {
+      const q = (url.searchParams.get('q') || '').trim();
+      if (q.length < 2) return json([], 200, cors);
+      const data = await npCall(env, 'Address', 'getCities', {
+        FindByString: q,
+        Limit: '20',
+        Page: '1',
+      });
+      const cities = (data || []).map((c) => ({
+        ref: c.Ref,
+        name: c.Description,
+        area: c.AreaDescription || '',
+      }));
+      return json(cities, 200, cors, 86400);
+    }
+    if (action === 'np-warehouses') {
+      const ref = url.searchParams.get('ref') || '';
+      if (!ref) return json([], 200, cors);
+      const data = await npCall(env, 'AddressGeneral', 'getWarehouses', {
+        CityRef: ref,
+        Limit: '1000',
+        Page: '1',
+      });
+      const whs = (data || []).map((w) => ({
+        ref: w.Ref,
+        description: w.Description,
+        number: w.Number,
+      }));
+      return json(whs, 200, cors, 86400);
+    }
+    return json({ ok: false, error: 'unknown_action' }, 400, cors);
+  } catch (e) {
+    return json({ ok: false, error: 'np_failed', detail: String(e).slice(0, 200) }, 502, cors);
+  }
+}
+
+async function npCall(env, modelName, calledMethod, methodProperties) {
+  const res = await fetch('https://api.novaposhta.ua/v2.0/json/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: env.NP_API_KEY, modelName, calledMethod, methodProperties }),
+  });
+  const j = await res.json();
+  if (!j.success) throw new Error((j.errors || []).join('; ') || 'nova poshta error');
+  return j.data;
 }
 
 // ============================================================================
@@ -251,11 +319,10 @@ function safeFilename(name) {
   return String(name).replace(/[^\w.\-]+/g, '_').slice(0, 80) || 'slipmat-order.pdf';
 }
 
-function json(obj, status, headers) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...headers },
-  });
+function json(obj, status, headers, maxAge) {
+  const h = { 'Content-Type': 'application/json', ...headers };
+  if (maxAge) h['Cache-Control'] = 'public, max-age=' + maxAge;
+  return new Response(JSON.stringify(obj), { status, headers: h });
 }
 
 // Base64-encode an ArrayBuffer in chunks (avoids call-stack limits on big PDFs).

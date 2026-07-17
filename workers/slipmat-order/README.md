@@ -20,6 +20,16 @@ verifies them (Turnstile + honeypot) and notifies the shop via **Telegram** and
 
 Response: `{ "ok": true }` on success; `{ "ok": false, "error": "..." }` otherwise.
 
+### Nova Poshta proxy
+
+The same Worker also proxies Nova Poshta address lookups so the NP key stays
+server-side (responses cached ~1 day):
+
+- `GET <worker-url>?action=np-cities&q=<query>` → `[{ ref, name, area }]`
+- `GET <worker-url>?action=np-warehouses&ref=<cityRef>` → `[{ ref, description, number }]`
+
+If `NP_API_KEY` is not set the block degrades to a plain text delivery field.
+
 ## Config
 
 `wrangler.toml [vars]` (non-secret): `ALLOWED_ORIGIN`, `RESEND_FROM`, `ORDER_EMAIL_TO`.
@@ -32,6 +42,7 @@ wrangler secret put TURNSTILE_SECRET
 wrangler secret put RESEND_API_KEY
 wrangler secret put TELEGRAM_BOT_TOKEN
 wrangler secret put TELEGRAM_CHAT_ID
+wrangler secret put NP_API_KEY          # Nova Poshta (optional; enables delivery lookups)
 ```
 
 ## Local dev

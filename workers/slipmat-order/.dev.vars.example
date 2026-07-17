@@ -10,3 +10,8 @@ RESEND_API_KEY=re_your_key_here
 # Telegram bot token (@BotFather) and target chat id (your DM or a group id)
 TELEGRAM_BOT_TOKEN=123456789:AA-your-bot-token
 TELEGRAM_CHAT_ID=123456789
+
+# Nova Poshta API key (business cabinet → Settings → Security → API keys).
+# Enables the city→warehouse delivery lookups; without it the block falls back
+# to a plain text delivery field.
+NP_API_KEY=your_nova_poshta_api_key

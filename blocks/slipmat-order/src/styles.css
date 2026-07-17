@@ -120,8 +120,8 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #fff;
   border: 1.5px solid #000;
@@ -153,7 +153,7 @@
   gap: 8px;
 }
 .so-field--qty {
-  max-width: 140px;
+  align-items: flex-start;
 }
 .so-label {
   font-size: 15px;
@@ -193,61 +193,158 @@
   box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.3);
 }
 
-/* "Назва міста" geocoder styled to match .so-input on the dark theme */
-.so-geocoder-field .mapboxgl-ctrl-geocoder {
+/* On-map geocoder, styled to match the +/- controls (dark + red accent) */
+.so-geocoder {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 82%);
+  z-index: 4;
+}
+.so-geocoder .mapboxgl-ctrl-geocoder {
   width: 100% !important;
   max-width: none !important;
   min-width: 0 !important;
-  background: var(--so-field-bg);
-  border: 1px solid var(--so-border);
+  background: #141414;
+  border: 1px solid var(--so-accent);
   border-radius: 0;
-  box-shadow: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   font-family: inherit;
 }
-.so-geocoder-field .mapboxgl-ctrl-geocoder--input {
-  height: 52px;
-  padding: 8px 14px 8px 42px;
-  font-size: 15px;
+.so-geocoder .mapboxgl-ctrl-geocoder--input {
+  height: 46px;
+  padding: 6px 12px 6px 40px;
+  font-size: 14px;
   color: var(--so-fg);
 }
-.so-geocoder-field .mapboxgl-ctrl-geocoder--input::placeholder {
-  color: #6f6f6f;
+.so-geocoder .mapboxgl-ctrl-geocoder--input::placeholder {
+  color: #9a9a9a;
 }
-.so-geocoder-field .mapboxgl-ctrl-geocoder--input:focus {
+.so-geocoder .mapboxgl-ctrl-geocoder--input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(232, 73, 29, 0.35);
 }
-.so-geocoder-field .mapboxgl-ctrl-geocoder--icon-search {
-  top: 15px;
-  left: 12px;
+.so-geocoder .mapboxgl-ctrl-geocoder--icon-search {
+  top: 12px;
+  left: 10px;
   width: 22px;
   height: 22px;
-  fill: #8a8a8a;
+  fill: #cfcfcf;
 }
-.so-geocoder-field .mapboxgl-ctrl-geocoder--icon-close {
-  fill: #b3b3b3;
+.so-geocoder .mapboxgl-ctrl-geocoder--icon-close,
+.so-geocoder .mapboxgl-ctrl-geocoder--icon-loading {
+  fill: #cfcfcf;
 }
-.so-geocoder-field .mapboxgl-ctrl-geocoder--button {
+.so-geocoder .mapboxgl-ctrl-geocoder--button {
   background: transparent;
 }
-/* suggestions dropdown */
-.so-geocoder-field .suggestions {
-  background: #1a1a1a;
-  border: 1px solid var(--so-border);
+.so-geocoder .suggestions {
+  background: #141414;
+  border: 1px solid var(--so-accent);
   border-radius: 0;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
 }
-.so-geocoder-field .suggestions > li > a {
+.so-geocoder .suggestions > li > a {
   color: var(--so-fg);
 }
-.so-geocoder-field .suggestions > li > a:hover,
-.so-geocoder-field .suggestions > .active > a {
-  background: rgba(232, 73, 29, 0.2);
+.so-geocoder .suggestions > li > a:hover,
+.so-geocoder .suggestions > .active > a {
+  background: rgba(232, 73, 29, 0.25);
   color: var(--so-fg);
 }
-.so-geocoder-field.so-invalid .mapboxgl-ctrl-geocoder {
-  border-color: #ff5252;
-  box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.3);
+
+/* ── Nova Poshta delivery (city autocomplete → warehouse select) ─── */
+.so-np {
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-gap);
+}
+.so-np-city-wrap {
+  position: relative;
+}
+.so-np-list {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #141414;
+  border: 1px solid var(--so-accent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+.so-np-list > li {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--so-fg);
+  cursor: pointer;
+}
+.so-np-list > li:hover,
+.so-np-list > li.so-active {
+  background: rgba(232, 73, 29, 0.25);
+}
+.so-np-list > li.so-np-empty {
+  color: var(--so-muted);
+  cursor: default;
+}
+/* native <select> styled dark, with a red chevron */
+.so-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23e8491d' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+  cursor: pointer;
+}
+.so-select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.so-select option {
+  background: #141414;
+  color: var(--so-fg);
+}
+
+/* ── Quantity stepper (−/+ only, no manual entry) ────────────────── */
+.so-qty-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--so-accent);
+  width: max-content;
+}
+.so-qty-btn {
+  width: 48px;
+  height: 52px;
+  border: none;
+  background: #141414;
+  color: var(--so-fg);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.so-qty-btn:hover:not(:disabled) {
+  background: var(--so-accent);
+}
+.so-qty-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.so-qty-value {
+  min-width: 56px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--so-field-bg);
+  border-left: 1px solid var(--so-accent);
+  border-right: 1px solid var(--so-accent);
 }
 
 /* honeypot — visually hidden but present for bots */

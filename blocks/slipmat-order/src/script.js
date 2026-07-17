@@ -2,14 +2,14 @@
  * Slipmat Order
  *
  * Behavior:
- *   - Full-width interactive map (mapbox-gl) with a fixed center dot (CSS).
- *   - The "Назва міста" form field is a geocoder: picking a city names the
- *     order and flies the map there (customer can then fine-tune the framing).
+ *   - Full-width interactive map (mapbox-gl) with a fixed center dot (CSS) and
+ *     an on-map geocoder: picking a place names the order and flies the map
+ *     there (customer then fine-tunes the framing).
  *   - Round live preview via Mapbox Static Images API (reflects the live map,
  *     incl. bearing/pitch), zoom-matched to the exported PDF.
- *   - Order form. On submit the print-ready PDF is generated in-browser and
- *     POSTed to an order endpoint together with the form fields. The customer
- *     never downloads the file — it goes straight to the shop.
+ *   - Order form (recipient, phone, Nova Poshta delivery, quantity). On submit
+ *     the print-ready PDF is generated in-browser and POSTed to the order Worker
+ *     with the fields. The customer never downloads the file.
  *
  * Print target (identical to slipmat-generator Stage 1):
  *   - 310 mm outer diameter (incl. bleed), 5 mm centered pin hole (transparent),
@@ -60,6 +60,12 @@
   var PREVIEW_SIZE = 600; // logical px per preview side
   var PREVIEW_ZOOM_OFFSET = Math.log2((TILE_LOGICAL_SIZE * 2) / PREVIEW_SIZE); // ≈ 2.0931
 
+  // Zoom the print (and the preview, which mirrors it) IN relative to the
+  // interactive map, so the two don't feel so far apart. 0 = print covers the
+  // full 4-tile area at the map's zoom (widest, most zoomed-out feel); higher =
+  // tighter/closer print. Tune to taste.
+  var PRINT_ZOOM_BOOST = 1.0;
+
   // Web Mercator (EPSG:3857)
   var EARTH_CIRCUMFERENCE = 40075016.686;
   var EARTH_RADIUS = 6378137;
@@ -89,14 +95,13 @@
   mapboxgl.accessToken = MAPBOX_TOKEN;
 
   // ==========================================================================
-  //  Map & city geocoder
+  //  Map & on-map geocoder
   // ==========================================================================
 
-  // The "Назва міста" form field IS the geocoder. Selecting a result records the
-  // city name (for the order) and flies the map there. The customer can then
-  // pan/zoom to fine-tune the framing — the PDF is the source of truth for print.
+  // The geocoder lives on the map. Selecting a result records the place name
+  // (for the order) and flies the map there. The customer can then pan/zoom to
+  // fine-tune the framing — the PDF is the source of truth for print.
   var currentLocation = '';
-  var hiddenCity = document.getElementById('so-city');
 
   var map = new mapboxgl.Map({
     container: 'so-map',
@@ -116,14 +121,12 @@
     flyTo: false, // we fly manually below, with a print-friendly zoom
     language: 'uk',
     types: 'place,locality,region,district,neighborhood',
-    placeholder: 'Введіть назву міста',
+    placeholder: 'Знайти місто або вулицю',
   });
-  document.getElementById('so-city-geocoder').appendChild(geocoder.onAdd(map));
+  document.getElementById('so-geocoder').appendChild(geocoder.onAdd(map));
   geocoder.on('result', function (e) {
     if (e && e.result) {
       currentLocation = e.result.text || e.result.place_name || '';
-      hiddenCity.value = currentLocation;
-      document.getElementById('so-city-geocoder').classList.remove('so-invalid');
       if (e.result.center) {
         map.flyTo({ center: e.result.center, zoom: Math.max(map.getZoom(), 12) });
       }
@@ -132,7 +135,6 @@
   });
   geocoder.on('clear', function () {
     currentLocation = '';
-    hiddenCity.value = '';
   });
 
   window.addEventListener('resize', function () {
@@ -151,7 +153,7 @@
 
   function staticPreviewUrl() {
     var c = map.getCenter();
-    var previewZoom = Math.max(0, map.getZoom() - PREVIEW_ZOOM_OFFSET);
+    var previewZoom = Math.max(0, map.getZoom() + PRINT_ZOOM_BOOST - PREVIEW_ZOOM_OFFSET);
     return (
       'https://api.mapbox.com/styles/v1/' +
       SITWELL_STYLE_STATIC +
@@ -379,6 +381,30 @@
       .replace(/^-+|-+$/g, '')
       .slice(0, 60);
   }
+  // Fallback city name when the customer panned the map without using the
+  // geocoder — reverse-geocode the map center for the order reference.
+  function reverseGeocode(lng, lat) {
+    var url =
+      'https://api.mapbox.com/geocoding/v5/mapbox.places/' +
+      lng +
+      ',' +
+      lat +
+      '.json?language=uk&types=place,locality,neighborhood,address&access_token=' +
+      MAPBOX_TOKEN;
+    return fetch(url)
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        if (j && j.features && j.features.length) {
+          return j.features[0].text || j.features[0].place_name || '';
+        }
+        return '';
+      })
+      .catch(function () {
+        return '';
+      });
+  }
 
   // ==========================================================================
   //  Turnstile (explicit render — site key comes from config, not markup)
@@ -413,20 +439,189 @@
   renderTurnstile();
 
   // ==========================================================================
-  //  Price
+  //  Quantity stepper (−/+ only — no manual entry) + price
   // ==========================================================================
 
-  var qtyInput = document.getElementById('so-qty');
+  var QTY_MIN = 1;
+  var QTY_MAX = 99;
+  var qty = QTY_MIN;
+  var qtyHidden = document.getElementById('so-qty');
+  var qtyValueEl = document.getElementById('so-qty-value');
+  var qtyMinus = document.getElementById('so-qty-minus');
+  var qtyPlus = document.getElementById('so-qty-plus');
   var priceEl = document.getElementById('so-price');
+
   function currentQty() {
-    var n = parseInt(qtyInput.value, 10);
-    return isNaN(n) || n < 1 ? 1 : n;
+    return qty;
   }
-  function updatePrice() {
-    priceEl.textContent = currentQty() * PRICE_UAH + ' грн';
+  function renderQty() {
+    qtyValueEl.textContent = String(qty);
+    qtyHidden.value = String(qty);
+    priceEl.textContent = qty * PRICE_UAH + ' грн';
+    qtyMinus.disabled = qty <= QTY_MIN;
+    qtyPlus.disabled = qty >= QTY_MAX;
   }
-  qtyInput.addEventListener('input', updatePrice);
-  updatePrice();
+  qtyMinus.addEventListener('click', function () {
+    if (qty > QTY_MIN) {
+      qty--;
+      renderQty();
+    }
+  });
+  qtyPlus.addEventListener('click', function () {
+    if (qty < QTY_MAX) {
+      qty++;
+      renderQty();
+    }
+  });
+  renderQty();
+
+  // ==========================================================================
+  //  Nova Poshta delivery (city autocomplete → warehouse select)
+  //  Calls the order Worker as a proxy (?action=np-*) so the NP key stays
+  //  server-side. If no ORDER_ENDPOINT is set (dev dry-run) or the proxy errors,
+  //  we fall back to a plain text delivery field.
+  // ==========================================================================
+
+  var npEnabled = !!ORDER_ENDPOINT;
+  var npBox = document.getElementById('so-np');
+  var npCityInput = document.getElementById('so-np-city');
+  var npCityList = document.getElementById('so-np-city-list');
+  var npCityRef = document.getElementById('so-np-city-ref');
+  var npWh = document.getElementById('so-np-wh');
+  var npWhRef = document.getElementById('so-np-wh-ref');
+  var deliveryFallback = document.getElementById('so-delivery-fallback');
+  var npTimer = null;
+
+  function useDeliveryFallback() {
+    npEnabled = false;
+    if (npBox) npBox.hidden = true;
+    if (deliveryFallback) deliveryFallback.hidden = false;
+  }
+  function npFetch(action, params) {
+    var qs = Object.keys(params)
+      .map(function (k) {
+        return k + '=' + encodeURIComponent(params[k]);
+      })
+      .join('&');
+    var sep = ORDER_ENDPOINT.indexOf('?') === -1 ? '?' : '&';
+    return fetch(ORDER_ENDPOINT + sep + 'action=' + action + '&' + qs).then(function (r) {
+      if (!r.ok) throw new Error('np ' + r.status);
+      return r.json();
+    });
+  }
+  function hideCityList() {
+    npCityList.hidden = true;
+    npCityList.innerHTML = '';
+  }
+  function renderCityList(items) {
+    npCityList.innerHTML = '';
+    if (!items || !items.length) {
+      var empty = document.createElement('li');
+      empty.className = 'so-np-empty';
+      empty.textContent = 'Нічого не знайдено';
+      npCityList.appendChild(empty);
+      npCityList.hidden = false;
+      return;
+    }
+    items.forEach(function (city) {
+      var li = document.createElement('li');
+      li.textContent = city.name + (city.area ? ' (' + city.area + ')' : '');
+      li.addEventListener('click', function () {
+        npCityInput.value = city.name;
+        npCityRef.value = city.ref;
+        npCityInput.classList.remove('so-invalid');
+        hideCityList();
+        loadWarehouses(city.ref);
+      });
+      npCityList.appendChild(li);
+    });
+    npCityList.hidden = false;
+  }
+  function resetWarehouses() {
+    npWhRef.value = '';
+    npWh.innerHTML = '<option value="">Спочатку оберіть місто</option>';
+    npWh.disabled = true;
+  }
+  function loadWarehouses(cityRef) {
+    npWh.innerHTML = '<option value="">Завантаження…</option>';
+    npWh.disabled = true;
+    npFetch('np-warehouses', { ref: cityRef })
+      .then(function (items) {
+        npWh.innerHTML = '<option value="">Оберіть відділення / поштомат</option>';
+        (items || []).forEach(function (w) {
+          var opt = document.createElement('option');
+          opt.value = w.ref;
+          opt.textContent = w.description;
+          npWh.appendChild(opt);
+        });
+        npWh.disabled = false;
+      })
+      .catch(function () {
+        useDeliveryFallback();
+      });
+  }
+
+  if (!npEnabled) {
+    useDeliveryFallback();
+  } else {
+    npCityInput.addEventListener('input', function () {
+      npCityRef.value = '';
+      resetWarehouses();
+      var q = npCityInput.value.trim();
+      clearTimeout(npTimer);
+      if (q.length < 2) {
+        hideCityList();
+        return;
+      }
+      npTimer = setTimeout(function () {
+        npFetch('np-cities', { q: q })
+          .then(renderCityList)
+          .catch(function () {
+            useDeliveryFallback();
+          });
+      }, 250);
+    });
+    npWh.addEventListener('change', function () {
+      npWhRef.value = npWh.value;
+      if (npWh.value) npWh.classList.remove('so-invalid');
+    });
+    document.addEventListener('click', function (e) {
+      if (!npCityInput.contains(e.target) && !npCityList.contains(e.target)) hideCityList();
+    });
+  }
+
+  function getDeliveryPayload() {
+    if (npEnabled) {
+      var whSel = npWh;
+      var whText = whSel.value && whSel.options[whSel.selectedIndex]
+        ? whSel.options[whSel.selectedIndex].text
+        : '';
+      return {
+        text: npCityInput.value.trim() + (whText ? ', ' + whText : ''),
+        city: npCityInput.value.trim(),
+        cityRef: npCityRef.value,
+        wh: whText,
+        whRef: npWhRef.value,
+      };
+    }
+    var t = document.getElementById('so-delivery').value.trim();
+    return { text: t, city: '', cityRef: '', wh: '', whRef: '' };
+  }
+  function validateDelivery() {
+    if (npEnabled) {
+      var cityOk = !!npCityRef.value;
+      var whOk = !!npWhRef.value;
+      npCityInput.classList.toggle('so-invalid', !cityOk);
+      npWh.classList.toggle('so-invalid', !whOk);
+      if (!cityOk) return { ok: false, el: npCityInput, msg: 'Оберіть місто доставки зі списку.' };
+      if (!whOk) return { ok: false, el: npWh, msg: 'Оберіть відділення або поштомат.' };
+      return { ok: true };
+    }
+    var d = document.getElementById('so-delivery');
+    var ok = d.value.trim().length > 0;
+    d.classList.toggle('so-invalid', !ok);
+    return ok ? { ok: true } : { ok: false, el: d, msg: 'Вкажіть, будь ласка, реквізити доставки.' };
+  }
 
   // ==========================================================================
   //  Form: validation + submit → generate PDF → POST to endpoint
@@ -438,7 +633,7 @@
   var btn = document.getElementById('so-submit');
   var origBtnText = btn.textContent;
 
-  var requiredFields = ['so-name', 'so-phone', 'so-delivery'];
+  var requiredFields = ['so-name', 'so-phone'];
 
   function setBtn(text, disabled) {
     btn.textContent = text;
@@ -460,30 +655,27 @@
   function validate() {
     clearError();
     var firstInvalid = null;
-
-    // City comes from the geocoder → the hidden #so-city is only set on a
-    // real selection. Highlight the geocoder field, not the hidden input.
-    var cityOk = hiddenCity.value.trim().length > 0;
-    var geoField = document.getElementById('so-city-geocoder');
-    geoField.classList.toggle('so-invalid', !cityOk);
-    if (!cityOk) {
-      firstInvalid = geoField.querySelector('.mapboxgl-ctrl-geocoder--input') || geoField;
-    }
+    var msg = '';
 
     requiredFields.forEach(function (id) {
       var el = document.getElementById(id);
       var ok = el.value.trim().length > 0;
       el.classList.toggle('so-invalid', !ok);
-      if (!ok && !firstInvalid) firstInvalid = el;
+      if (!ok && !firstInvalid) {
+        firstInvalid = el;
+        msg = 'Будь ласка, заповніть усі обовʼязкові поля.';
+      }
     });
 
-    if (firstInvalid || !cityOk) {
-      showError(
-        !cityOk
-          ? 'Оберіть, будь ласка, місто зі списку пошуку.'
-          : 'Будь ласка, заповніть усі обовʼязкові поля.'
-      );
-      if (firstInvalid) firstInvalid.focus();
+    var del = validateDelivery();
+    if (!del.ok && !firstInvalid) {
+      firstInvalid = del.el;
+      msg = del.msg;
+    }
+
+    if (firstInvalid) {
+      showError(msg);
+      firstInvalid.focus();
       return false;
     }
     return true;
@@ -514,39 +706,53 @@
     var c = map.getCenter();
     var center = [c.lng, c.lat];
     var zoom = map.getZoom();
-    var cityValue = document.getElementById('so-city').value.trim();
+    var printZoom = Math.min(22, zoom + PRINT_ZOOM_BOOST);
+    var delivery = getDeliveryPayload();
 
-    var tilesPromise = fetchFourTiles(center, zoom, function (done, total) {
+    // City for the order: geocoder pick, else reverse-geocode the map center.
+    var namePromise = currentLocation
+      ? Promise.resolve(currentLocation)
+      : reverseGeocode(center[0].toFixed(6), center[1].toFixed(6));
+
+    var tilesPromise = fetchFourTiles(center, printZoom, function (done, total) {
       setBtn('Генеруємо макет… ' + done + '/' + total, true);
     });
 
-    tilesPromise
-      .then(function (tiles) {
+    Promise.all([tilesPromise, namePromise])
+      .then(function (results) {
+        var tiles = results[0];
+        var cityValue = results[1] || '';
         setBtn('Обробляємо…', true);
         return nextFrame().then(function () {
           var composited = compositeTiles(tiles);
           var finalCanvas = clipAndAddMarker(composited);
           return nextFrame().then(function () {
-            return buildPdfBlob(finalCanvas);
+            return { blob: buildPdfBlob(finalCanvas), city: cityValue };
           });
         });
       })
-      .then(function (pdfBlob) {
+      .then(function (built) {
+        var pdfBlob = built.blob;
+        var cityValue = built.city;
         setBtn('Надсилаємо…', true);
 
-        var slug = slugify(cityValue || currentLocation);
+        var slug = slugify(cityValue);
         var filename = 'slipmat-order' + (slug ? '-' + slug : '') + '.pdf';
 
         var fd = new FormData();
         fd.append('city', cityValue);
         fd.append('name', document.getElementById('so-name').value.trim());
         fd.append('phone', document.getElementById('so-phone').value.trim());
-        fd.append('delivery', document.getElementById('so-delivery').value.trim());
+        fd.append('delivery', delivery.text);
+        fd.append('delivery_city', delivery.city);
+        fd.append('delivery_city_ref', delivery.cityRef);
+        fd.append('delivery_warehouse', delivery.wh);
+        fd.append('delivery_warehouse_ref', delivery.whRef);
         fd.append('qty', String(currentQty()));
         fd.append('price_uah', String(PRICE_UAH));
         fd.append('total_uah', String(currentQty() * PRICE_UAH));
         fd.append('map_center', center[0].toFixed(6) + ',' + center[1].toFixed(6));
-        fd.append('map_zoom', zoom.toFixed(2));
+        fd.append('map_zoom', printZoom.toFixed(2));
         fd.append('geocoder_location', currentLocation);
         fd.append('page_url', window.location.href);
         fd.append('website', ''); // honeypot (always empty here)
@@ -559,7 +765,7 @@
             city: cityValue,
             name: fd.get('name'),
             phone: fd.get('phone'),
-            delivery: fd.get('delivery'),
+            delivery: delivery.text,
             qty: fd.get('qty'),
             total_uah: fd.get('total_uah'),
             pdfBytes: pdfBlob.size,
