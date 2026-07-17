@@ -1,19 +1,26 @@
 /* === SLIPMAT ORDER — custom styles (dark Sitwell theme) === */
-:root {
-  --so-accent: #e8491d;          /* Sitwell red */
+/* NOTE: variables live on .so-wrap, NOT :root. Weblium prefixes every selector
+   in the CSS tab with the embed scope, which turns `:root` into `[embed] :root`
+   — a selector that matches nothing, so the custom properties silently vanish
+   (borders/toggle rendered blank on the live page). .so-wrap is a real element
+   that wraps the whole block, so the vars cascade to every descendant. */
+.so-wrap {
+  --so-accent: #eb4025;          /* Sitwell brand red — matches the site fields */
   --so-fg: #ffffff;
   --so-muted: #b3b3b3;
   --so-field-bg: #1a1a1a;
   --so-border: var(--so-accent);
-  --so-gap: 22px;
-}
+  --so-gap: 24px;                /* matches the site form field offset */
+  /* Site typography: Druk for headings/price/button, Gilroy for body/fields.
+     Falls back to sane defaults in the dev harness (site vars absent there). */
+  --so-font-body: var(--ui-text-font-family, 'Gilroy-Light', -apple-system, sans-serif);
+  --so-font-head: var(--ui-block-title-font-family, 'Druk Text Wide Cyr', sans-serif);
 
-.so-wrap {
   width: 100%;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: inherit;
+  font-family: var(--so-font-body);
   color: var(--so-fg);
 }
 .so-wrap *,
@@ -135,8 +142,9 @@
 }
 .so-price {
   margin: 4px 0 0;
+  font-family: var(--so-font-head);
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--so-fg);
 }
@@ -171,7 +179,7 @@
   font-size: 15px;
   color: var(--so-fg);
   background: var(--so-field-bg);
-  border: 1px solid var(--so-border);
+  border: 2px solid var(--so-border);
   border-radius: 0;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -186,7 +194,7 @@
   color: #6f6f6f;
 }
 .so-input:focus {
-  box-shadow: 0 0 0 2px rgba(232, 73, 29, 0.35);
+  box-shadow: 0 0 0 2px rgba(235, 64, 37, 0.35);
 }
 .so-input.so-invalid {
   border-color: #ff5252;
@@ -249,7 +257,7 @@
 }
 .so-geocoder .suggestions > li > a:hover,
 .so-geocoder .suggestions > .active > a {
-  background: rgba(232, 73, 29, 0.25);
+  background: rgba(235, 64, 37, 0.25);
   color: var(--so-fg);
 }
 
@@ -284,7 +292,7 @@
 }
 .so-np-list > li:hover,
 .so-np-list > li.so-active {
-  background: rgba(232, 73, 29, 0.25);
+  background: rgba(235, 64, 37, 0.25);
 }
 .so-np-list > li.so-np-empty {
   color: var(--so-muted);
@@ -342,14 +350,14 @@
   left: 25px;
 }
 .so-switch-input:focus-visible + .so-switch {
-  box-shadow: 0 0 0 2px rgba(232, 73, 29, 0.35);
+  box-shadow: 0 0 0 2px rgba(235, 64, 37, 0.35);
 }
 
 /* ── Quantity stepper (−/+ only, no manual entry) ────────────────── */
 .so-qty-stepper {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid var(--so-accent);
+  border: 2px solid var(--so-accent);
   width: max-content;
 }
 .so-qty-btn {
@@ -379,8 +387,8 @@
   font-size: 16px;
   font-weight: 700;
   background: var(--so-field-bg);
-  border-left: 1px solid var(--so-accent);
-  border-right: 1px solid var(--so-accent);
+  border-left: 2px solid var(--so-accent);
+  border-right: 2px solid var(--so-accent);
 }
 
 /* honeypot — visually hidden but present for bots */
@@ -404,10 +412,11 @@
 
 .so-btn {
   height: 56px;
-  border: 1px solid var(--so-accent);
+  border: 2px solid var(--so-accent);
   border-radius: 0;
   background: transparent;
   color: var(--so-fg);
+  font-family: var(--so-font-head);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -430,8 +439,9 @@
 }
 .so-thanks-title {
   margin: 0 0 10px;
+  font-family: var(--so-font-head);
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--so-fg);
 }
 .so-thanks-text {

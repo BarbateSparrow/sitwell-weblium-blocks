@@ -422,6 +422,8 @@
     turnstileWidgetId = window.turnstile.render(el, {
       sitekey: TURNSTILE_SITE_KEY,
       theme: 'dark',
+      // Hide the widget entirely; it only surfaces if a real challenge is needed.
+      appearance: 'interaction-only',
     });
   }
   function getTurnstileToken() {
@@ -700,6 +702,39 @@
 
   var requiredFields = ['so-name', 'so-phone'];
 
+  // After a successful order we show the thank-you, then auto-hide it and restore
+  // a fresh form so the block returns to a usable state (не лишає порожнечі).
+  var THANKS_TIMEOUT_MS = 7000;
+  var thanksTimer = null;
+
+  function resetForm() {
+    form.reset();
+    qty = QTY_MIN;
+    renderQty();
+    commentToggle.checked = false;
+    commentField.hidden = true;
+    commentField.value = '';
+    if (npEnabled) {
+      npCityRef.value = '';
+      resetWarehouse();
+    }
+    npCityInput.classList.remove('so-invalid');
+    npWhInput.classList.remove('so-invalid');
+    clearError();
+    resetTurnstile();
+    setBtn(origBtnText, false);
+  }
+  function showThanks() {
+    form.hidden = true;
+    thanks.hidden = false;
+    clearTimeout(thanksTimer);
+    thanksTimer = setTimeout(function () {
+      thanks.hidden = true;
+      resetForm();
+      form.hidden = false;
+    }, THANKS_TIMEOUT_MS);
+  }
+
   function setBtn(text, disabled) {
     btn.textContent = text;
     btn.disabled = !!disabled;
@@ -717,6 +752,12 @@
     errorEl.textContent = '';
     errorEl.hidden = true;
   }
+  // Plausible Ukrainian phone: strip spaces/()/-, then require 10–13 digits with
+  // an optional leading +. Covers 0XXXXXXXXX and +380XXXXXXXXX.
+  function validatePhone(raw) {
+    var cleaned = raw.replace(/[\s()\-]/g, '');
+    return /^\+?\d{10,13}$/.test(cleaned);
+  }
   function validate() {
     clearError();
     var firstInvalid = null;
@@ -731,6 +772,16 @@
         msg = 'Будь ласка, заповніть усі обовʼязкові поля.';
       }
     });
+
+    // Phone format (only if it's non-empty; the empty case is caught above).
+    var phoneEl = document.getElementById('so-phone');
+    if (phoneEl.value.trim() && !validatePhone(phoneEl.value)) {
+      phoneEl.classList.add('so-invalid');
+      if (!firstInvalid) {
+        firstInvalid = phoneEl;
+        msg = 'Вкажіть коректний номер телефону, напр. +380XXXXXXXXX.';
+      }
+    }
 
     var del = validateDelivery();
     if (!del.ok && !firstInvalid) {
@@ -753,8 +804,7 @@
     // Honeypot: a real user never fills this. Pretend success, do nothing.
     var honeypot = document.getElementById('so-website');
     if (honeypot && honeypot.value.trim() !== '') {
-      form.hidden = true;
-      thanks.hidden = false;
+      showThanks();
       return;
     }
 
@@ -852,8 +902,7 @@
         });
       })
       .then(function () {
-        form.hidden = true;
-        thanks.hidden = false;
+        showThanks();
       })
       .catch(function (err) {
         console.error('[slipmat-order] order failed:', err);
