@@ -72,6 +72,7 @@ export default {
       phone: str(form.get('phone')),
       delivery: str(form.get('delivery')),
       qty: str(form.get('qty')) || '1',
+      comment: str(form.get('comment')),
       priceUah: str(form.get('price_uah')),
       totalUah: str(form.get('total_uah')),
       mapCenter: str(form.get('map_center')),
@@ -79,7 +80,7 @@ export default {
       location: str(form.get('geocoder_location')),
       pageUrl: str(form.get('page_url')),
     };
-    if (!order.name || !order.phone || !order.delivery) {
+    if (!order.name || !order.phone) {
       return json({ ok: false, error: 'missing_fields' }, 422, cors);
     }
 
@@ -248,6 +249,7 @@ function telegramCaption(o) {
     `<b>Мапа:</b> center ${esc(o.mapCenter)}, zoom ${esc(o.mapZoom)}`,
   ];
   if (o.location) lines.push(`<b>Геокодер:</b> ${esc(o.location)}`);
+  if (o.comment) lines.push('', `💬 <b>Коментар:</b> ${esc(o.comment)}`);
   return lines.join('\n');
 }
 
@@ -294,6 +296,7 @@ function emailHtml(o) {
       ${row('Доставка', o.delivery)}
       ${row('Кількість', o.qty)}
       ${row('Сума, грн', o.totalUah)}
+      ${o.comment ? row('Коментар', o.comment) : ''}
       ${row('Мапа center', o.mapCenter)}
       ${row('Мапа zoom', o.mapZoom)}
       ${row('Геокодер', o.location)}

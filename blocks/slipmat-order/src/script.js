@@ -60,11 +60,11 @@
   var PREVIEW_SIZE = 600; // logical px per preview side
   var PREVIEW_ZOOM_OFFSET = Math.log2((TILE_LOGICAL_SIZE * 2) / PREVIEW_SIZE); // ≈ 2.0931
 
-  // Zoom the print (and the preview, which mirrors it) IN relative to the
-  // interactive map, so the two don't feel so far apart. 0 = print covers the
-  // full 4-tile area at the map's zoom (widest, most zoomed-out feel); higher =
-  // tighter/closer print. Tune to taste.
-  var PRINT_ZOOM_BOOST = 1.0;
+  // Boost the print/preview zoom relative to the interactive map. Set equal to
+  // PREVIEW_ZOOM_OFFSET so that previewZoom === mapZoom — the preview (and the
+  // printed slipmat) show exactly the map's current zoom: same scale on the map
+  // and on the print.
+  var PRINT_ZOOM_BOOST = PREVIEW_ZOOM_OFFSET;
 
   // Web Mercator (EPSG:3857)
   var EARTH_CIRCUMFERENCE = 40075016.686;
@@ -476,7 +476,7 @@
   renderQty();
 
   // ==========================================================================
-  //  Nova Poshta delivery (city autocomplete → warehouse select)
+  //  Nova Poshta delivery (city autocomplete → warehouse combobox)
   //  Calls the order Worker as a proxy (?action=np-*) so the NP key stays
   //  server-side. If no ORDER_ENDPOINT is set (dev dry-run) or the proxy errors,
   //  we fall back to a plain text delivery field.
@@ -487,15 +487,17 @@
   var npCityInput = document.getElementById('so-np-city');
   var npCityList = document.getElementById('so-np-city-list');
   var npCityRef = document.getElementById('so-np-city-ref');
-  var npWh = document.getElementById('so-np-wh');
+  var npWhInput = document.getElementById('so-np-wh');
+  var npWhList = document.getElementById('so-np-wh-list');
   var npWhRef = document.getElementById('so-np-wh-ref');
-  var deliveryFallback = document.getElementById('so-delivery-fallback');
-  var npTimer = null;
+  var deliveryNote = document.getElementById('so-delivery-note');
+  var npCityTimer = null;
+  var npWarehouses = []; // {ref, description, number} loaded for the chosen city
 
-  function useDeliveryFallback() {
+  function showNpUnavailable() {
     npEnabled = false;
     if (npBox) npBox.hidden = true;
-    if (deliveryFallback) deliveryFallback.hidden = false;
+    if (deliveryNote) deliveryNote.hidden = false;
   }
   function npFetch(action, params) {
     var qs = Object.keys(params)
@@ -509,118 +511,181 @@
       return r.json();
     });
   }
-  function hideCityList() {
-    npCityList.hidden = true;
-    npCityList.innerHTML = '';
+
+  // Shared dropdown renderer for both comboboxes.
+  function hideList(ul) {
+    ul.hidden = true;
+    ul.innerHTML = '';
   }
-  function renderCityList(items) {
-    npCityList.innerHTML = '';
-    if (!items || !items.length) {
-      var empty = document.createElement('li');
-      empty.className = 'so-np-empty';
-      empty.textContent = 'Нічого не знайдено';
-      npCityList.appendChild(empty);
-      npCityList.hidden = false;
+  function renderList(ul, rows, emptyText) {
+    ul.innerHTML = '';
+    if (!rows.length) {
+      var li = document.createElement('li');
+      li.className = 'so-np-empty';
+      li.textContent = emptyText;
+      ul.appendChild(li);
+      ul.hidden = false;
       return;
     }
-    items.forEach(function (city) {
-      var li = document.createElement('li');
-      li.textContent = city.name + (city.area ? ' (' + city.area + ')' : '');
-      li.addEventListener('click', function () {
-        npCityInput.value = city.name;
-        npCityRef.value = city.ref;
-        npCityInput.classList.remove('so-invalid');
-        hideCityList();
-        loadWarehouses(city.ref);
+    rows.forEach(function (row) {
+      var item = document.createElement('li');
+      item.textContent = row.label;
+      // mousedown fires before the input blur / document click that hides the list
+      item.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        row.onPick();
       });
-      npCityList.appendChild(li);
+      ul.appendChild(item);
     });
-    npCityList.hidden = false;
+    ul.hidden = false;
   }
-  function resetWarehouses() {
-    npWhRef.value = '';
-    npWh.innerHTML = '<option value="">Спочатку оберіть місто</option>';
-    npWh.disabled = true;
-  }
-  function loadWarehouses(cityRef) {
-    npWh.innerHTML = '<option value="">Завантаження…</option>';
-    npWh.disabled = true;
-    npFetch('np-warehouses', { ref: cityRef })
+
+  // ---- City (async NP search) ----
+  function searchCities(q) {
+    npFetch('np-cities', { q: q })
       .then(function (items) {
-        npWh.innerHTML = '<option value="">Оберіть відділення / поштомат</option>';
-        (items || []).forEach(function (w) {
-          var opt = document.createElement('option');
-          opt.value = w.ref;
-          opt.textContent = w.description;
-          npWh.appendChild(opt);
-        });
-        npWh.disabled = false;
+        renderList(
+          npCityList,
+          (items || []).map(function (c) {
+            return {
+              label: c.name + (c.area ? ' (' + c.area + ')' : ''),
+              onPick: function () {
+                pickCity(c);
+              },
+            };
+          }),
+          'Нічого не знайдено'
+        );
       })
       .catch(function () {
-        useDeliveryFallback();
+        showNpUnavailable();
       });
+  }
+  function pickCity(c) {
+    npCityInput.value = c.name;
+    npCityRef.value = c.ref;
+    npCityInput.classList.remove('so-invalid');
+    hideList(npCityList);
+    resetWarehouse();
+    loadWarehouses(c.ref);
+  }
+
+  // ---- Warehouse (loaded once per city, filtered client-side, typeable) ----
+  function resetWarehouse() {
+    npWarehouses = [];
+    npWhRef.value = '';
+    npWhInput.value = '';
+    npWhInput.disabled = true;
+    npWhInput.placeholder = 'Спочатку оберіть місто';
+    hideList(npWhList);
+  }
+  function loadWarehouses(cityRef) {
+    npWhInput.placeholder = 'Завантаження…';
+    npFetch('np-warehouses', { ref: cityRef })
+      .then(function (items) {
+        npWarehouses = items || [];
+        npWhInput.disabled = false;
+        npWhInput.placeholder = 'Введіть № або назву відділення';
+      })
+      .catch(function () {
+        showNpUnavailable();
+      });
+  }
+  function filterWarehouses(q) {
+    q = q.trim().toLowerCase();
+    var rows = npWarehouses
+      .filter(function (w) {
+        if (!q) return true;
+        return (
+          (w.number && String(w.number).toLowerCase().indexOf(q) !== -1) ||
+          (w.description && w.description.toLowerCase().indexOf(q) !== -1)
+        );
+      })
+      .slice(0, 50)
+      .map(function (w) {
+        return {
+          label: w.description,
+          onPick: function () {
+            pickWarehouse(w);
+          },
+        };
+      });
+    renderList(npWhList, rows, 'Нічого не знайдено');
+  }
+  function pickWarehouse(w) {
+    npWhInput.value = w.description;
+    npWhRef.value = w.ref;
+    npWhInput.classList.remove('so-invalid');
+    hideList(npWhList);
   }
 
   if (!npEnabled) {
-    useDeliveryFallback();
+    showNpUnavailable();
   } else {
     npCityInput.addEventListener('input', function () {
       npCityRef.value = '';
-      resetWarehouses();
+      resetWarehouse();
       var q = npCityInput.value.trim();
-      clearTimeout(npTimer);
+      clearTimeout(npCityTimer);
       if (q.length < 2) {
-        hideCityList();
+        hideList(npCityList);
         return;
       }
-      npTimer = setTimeout(function () {
-        npFetch('np-cities', { q: q })
-          .then(renderCityList)
-          .catch(function () {
-            useDeliveryFallback();
-          });
+      npCityTimer = setTimeout(function () {
+        searchCities(q);
       }, 250);
     });
-    npWh.addEventListener('change', function () {
-      npWhRef.value = npWh.value;
-      if (npWh.value) npWh.classList.remove('so-invalid');
+    npWhInput.addEventListener('input', function () {
+      npWhRef.value = ''; // typing invalidates the previous pick
+      filterWarehouses(npWhInput.value);
+    });
+    npWhInput.addEventListener('focus', function () {
+      if (npWarehouses.length) filterWarehouses(npWhInput.value);
     });
     document.addEventListener('click', function (e) {
-      if (!npCityInput.contains(e.target) && !npCityList.contains(e.target)) hideCityList();
+      if (!npCityInput.contains(e.target) && !npCityList.contains(e.target)) hideList(npCityList);
+      if (!npWhInput.contains(e.target) && !npWhList.contains(e.target)) hideList(npWhList);
     });
   }
 
   function getDeliveryPayload() {
     if (npEnabled) {
-      var whSel = npWh;
-      var whText = whSel.value && whSel.options[whSel.selectedIndex]
-        ? whSel.options[whSel.selectedIndex].text
-        : '';
+      var city = npCityInput.value.trim();
+      var wh = npWhInput.value.trim();
       return {
-        text: npCityInput.value.trim() + (whText ? ', ' + whText : ''),
-        city: npCityInput.value.trim(),
+        text: city + (wh ? ', ' + wh : ''),
+        city: city,
         cityRef: npCityRef.value,
-        wh: whText,
+        wh: wh,
         whRef: npWhRef.value,
       };
     }
-    var t = document.getElementById('so-delivery').value.trim();
-    return { text: t, city: '', cityRef: '', wh: '', whRef: '' };
+    return { text: '', city: '', cityRef: '', wh: '', whRef: '' };
   }
   function validateDelivery() {
     if (npEnabled) {
       var cityOk = !!npCityRef.value;
       var whOk = !!npWhRef.value;
       npCityInput.classList.toggle('so-invalid', !cityOk);
-      npWh.classList.toggle('so-invalid', !whOk);
+      npWhInput.classList.toggle('so-invalid', !whOk);
       if (!cityOk) return { ok: false, el: npCityInput, msg: 'Оберіть місто доставки зі списку.' };
-      if (!whOk) return { ok: false, el: npWh, msg: 'Оберіть відділення або поштомат.' };
+      if (!whOk) return { ok: false, el: npWhInput, msg: 'Оберіть відділення зі списку.' };
       return { ok: true };
     }
-    var d = document.getElementById('so-delivery');
-    var ok = d.value.trim().length > 0;
-    d.classList.toggle('so-invalid', !ok);
-    return ok ? { ok: true } : { ok: false, el: d, msg: 'Вкажіть, будь ласка, реквізити доставки.' };
+    // NP unavailable → delivery is collected later by the manager; don't block.
+    return { ok: true };
+  }
+
+  // ---- Optional order comment (toggle) ----
+  var commentToggle = document.getElementById('so-comment-toggle');
+  var commentField = document.getElementById('so-comment');
+  commentToggle.addEventListener('change', function () {
+    commentField.hidden = !commentToggle.checked;
+    if (commentToggle.checked) commentField.focus();
+    else commentField.value = '';
+  });
+  function getComment() {
+    return commentToggle.checked ? commentField.value.trim() : '';
   }
 
   // ==========================================================================
@@ -748,6 +813,7 @@
         fd.append('delivery_city_ref', delivery.cityRef);
         fd.append('delivery_warehouse', delivery.wh);
         fd.append('delivery_warehouse_ref', delivery.whRef);
+        fd.append('comment', getComment());
         fd.append('qty', String(currentQty()));
         fd.append('price_uah', String(PRICE_UAH));
         fd.append('total_uah', String(currentQty() * PRICE_UAH));
@@ -766,6 +832,7 @@
             name: fd.get('name'),
             phone: fd.get('phone'),
             delivery: delivery.text,
+            comment: fd.get('comment'),
             qty: fd.get('qty'),
             total_uah: fd.get('total_uah'),
             pdfBytes: pdfBlob.size,

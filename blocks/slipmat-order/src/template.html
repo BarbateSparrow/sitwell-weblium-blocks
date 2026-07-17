@@ -32,7 +32,7 @@
         <img id="so-preview-img" class="so-preview-img" alt="">
         <div class="so-spindle"></div>
       </div>
-      <p class="so-note">На сліпматі буде надруковано саме те, що ви бачите у прев'ю.</p>
+      <p class="so-note">Тягни та масштабуй мапу, щоб обрати ділянку для друку.</p>
       <p id="so-price" class="so-price">1000 грн</p>
     </div>
 
@@ -60,28 +60,38 @@
         </div>
         <div class="so-field">
           <span class="so-label">Відділення / поштомат<b>*</b></span>
-          <select id="so-np-wh" class="so-input so-select" disabled>
-            <option value="">Спочатку оберіть місто</option>
-          </select>
+          <div class="so-np-city-wrap">
+            <input id="so-np-wh" class="so-input" type="text" autocomplete="off" disabled
+              placeholder="Спочатку оберіть місто">
+            <ul id="so-np-wh-list" class="so-np-list" hidden></ul>
+          </div>
           <input id="so-np-wh-ref" type="hidden">
         </div>
       </div>
 
-      <!-- Fallback: shown only if the Nova Poshta lookup is unavailable -->
-      <label class="so-field" id="so-delivery-fallback" hidden>
-        <span class="so-label">Реквізити доставки<b>*</b></span>
-        <textarea id="so-delivery" name="delivery" class="so-input so-textarea" rows="2"
-          placeholder="Місто, № відділення Нової Пошти"></textarea>
-      </label>
+      <!-- Shown only if the Nova Poshta lookup is unavailable -->
+      <p id="so-delivery-note" class="so-note" hidden>
+        Адресу доставки уточнимо при підтвердженні замовлення.
+      </p>
 
       <div class="so-field so-field--qty">
-        <span class="so-label">Кількість<b>*</b></span>
+        <span class="so-label">Кількість</span>
         <div class="so-qty-stepper">
           <button type="button" class="so-qty-btn" id="so-qty-minus" aria-label="Зменшити">−</button>
           <span id="so-qty-value" class="so-qty-value">1</span>
           <button type="button" class="so-qty-btn" id="so-qty-plus" aria-label="Збільшити">+</button>
         </div>
         <input id="so-qty" type="hidden" value="1">
+      </div>
+
+      <div class="so-field">
+        <label class="so-comment-toggle">
+          <span>Деякі побажання</span>
+          <input type="checkbox" id="so-comment-toggle" class="so-switch-input">
+          <span class="so-switch" aria-hidden="true"></span>
+        </label>
+        <textarea id="so-comment" class="so-input so-textarea" rows="2" hidden
+          placeholder="Туди сюди там сям ..."></textarea>
       </div>
 
       <!-- honeypot: hidden from users, tempting to bots -->
