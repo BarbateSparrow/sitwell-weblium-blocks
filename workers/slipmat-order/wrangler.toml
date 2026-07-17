@@ -8,4 +8,4 @@ compatibility_date = "2024-11-01"
 [vars]
 ALLOWED_ORIGIN = "https://sitwell.com.ua"
 RESEND_FROM = "Sitwell <orders@sitwell.com.ua>"
-ORDER_EMAIL_TO = "orders@sitwell.com.ua"
+ORDER_EMAIL_TO = "sitwell17@gmail.com"
