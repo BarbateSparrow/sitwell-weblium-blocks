@@ -7,19 +7,21 @@ deployed app. There is no bundler, no framework, no runtime dependencies.
 
 ## Repo layout
 
+```
 blocks/<name>/
-src/                 # edit these
-template.html      # HTML shell with {{STYLES}}, {{CONFIG_JSON}}, {{SCRIPT}}
-styles.css
-script.js
-config.json          # non-secret block config (map style, defaults)
-dist/                # GENERATED — do not edit by hand (git-ignored)
-README.md
-scripts/build.js       # zero-dep Node build (fs + string replace)
-dev-server/            # local sandbox loading src/ directly
-workers/<name>/        # Cloudflare Workers (order backend); wrangler + secrets
-.githooks/pre-commit   # secret-scan guard; enable via `git config core.hooksPath .githooks`
-.env                   # git-ignored; holds MAPBOX_TOKEN
+  src/                   # edit these
+    template.html        # HTML shell with {{STYLES}}, {{CONFIG_JSON}}, {{SCRIPT}}
+    styles.css
+    script.js
+  config.json            # non-secret block config (map style, order keys, defaults)
+  dist/                  # GENERATED — do not edit by hand (git-ignored)
+  README.md
+scripts/build.js         # zero-dep Node build (fs + string replace)
+dev-server/              # local sandbox loading src/ directly
+workers/<name>/          # Cloudflare Workers (order backend); wrangler + secrets
+.githooks/pre-commit     # secret-scan guard; enable via `git config core.hooksPath .githooks`
+.env                     # git-ignored; holds MAPBOX_TOKEN
+```
 
 ## Golden rules
 
@@ -38,9 +40,10 @@ workers/<name>/        # Cloudflare Workers (order backend); wrangler + secrets
    keep it that way. Worker secrets go through `wrangler secret put`, never
    into tracked files.
 
-4. **`dist/` is git-ignored** because the built file embeds the token.
-   To share a build, regenerate it locally with `npm run build` and paste
-   into the Weblium "Embed code" block on the corresponding page.
+4. **`dist/` is git-ignored** because the built files embed the token.
+   To ship a build, regenerate locally with `npm run build` and paste the
+   three `dist/weblium.*` files into the block's Custom Code tabs (see
+   "Weblium constraints" — `index.html` is a reference only, never pasted).
 
 5. **Enable the secret-scan hook once per clone:**
    `git config core.hooksPath .githooks`. It blocks any commit whose staged
@@ -62,8 +65,10 @@ npm run build              # all blocks
 npm run build:slipmat      # just slipmat-generator
 npm run build:order        # just slipmat-order
 ```
-Then copy the entire contents of `blocks/<name>/dist/index.html` into the
-Weblium "Embed code" block.
+Then paste the three generated files into the block's Weblium **Custom Code**
+tabs: `dist/weblium.html` → HTML, `dist/weblium.css` → CSS, `dist/weblium.js`
+→ JS. Save → Publish. (`dist/index.html` is a single-file reference — never
+pasted.) See "Weblium constraints" for why the split is required.
 
 **Adding a new block**
 1. `mkdir -p blocks/<name>/src`
