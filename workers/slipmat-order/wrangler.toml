@@ -1,0 +1,11 @@
+name = "slipmat-order"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Non-secret vars. Secrets (TURNSTILE_SECRET, RESEND_API_KEY,
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID) are set via `wrangler secret put`
+# and NEVER committed. For local dev put them in .dev.vars (git-ignored).
+[vars]
+ALLOWED_ORIGIN = "https://sitwell.com.ua"
+RESEND_FROM = "Sitwell <orders@sitwell.com.ua>"
+ORDER_EMAIL_TO = "orders@sitwell.com.ua"

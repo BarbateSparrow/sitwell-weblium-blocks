@@ -1,0 +1,11 @@
+{
+  "name": "slipmat-order-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker receiving slipmat orders (Turnstile + Telegram + Resend email)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}

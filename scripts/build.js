@@ -62,7 +62,10 @@ function buildBlock(blockName, env) {
   const script = fs.readFileSync(path.join(srcDir, 'script.js'), 'utf8');
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
-  // Compose the runtime config that will be exposed as window.SLIPMAT_CONFIG
+  // Compose the runtime config that will be exposed as window.SLIPMAT_CONFIG.
+  // Order-related keys are optional (only the slipmat-order block uses them);
+  // they are non-secret (a public endpoint URL + a public Turnstile site key)
+  // so they live in config.json, not .env.
   const runtimeConfig = {
     MAPBOX_TOKEN: env.MAPBOX_TOKEN || '',
     MAPBOX_STYLE_GL: config.mapbox_style_gl,
@@ -70,6 +73,10 @@ function buildBlock(blockName, env) {
     START_CENTER: config.start_center,
     START_ZOOM: config.start_zoom,
   };
+  if (config.order_endpoint !== undefined) runtimeConfig.ORDER_ENDPOINT = config.order_endpoint;
+  if (config.turnstile_site_key !== undefined)
+    runtimeConfig.TURNSTILE_SITE_KEY = config.turnstile_site_key;
+  if (config.price_uah !== undefined) runtimeConfig.PRICE_UAH = config.price_uah;
 
   if (!runtimeConfig.MAPBOX_TOKEN) {
     console.warn(`⚠  ${blockName}: MAPBOX_TOKEN missing in .env — dist will have empty token`);

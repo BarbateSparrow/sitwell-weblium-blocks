@@ -2,6 +2,11 @@
 .env
 .env.local
 dev-server/local-config.js
+workers/*/.dev.vars
+
+# Cloudflare Wrangler
+.wrangler/
+workers/*/.wrangler/
 
 # Build artifacts (contain an embedded token; regenerate with `npm run build`)
 blocks/*/dist/

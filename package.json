@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "build:slipmat": "node scripts/build.js slipmat-generator",
+    "build:order": "node scripts/build.js slipmat-order",
     "dev": "python3 -m http.server 5173 --directory .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

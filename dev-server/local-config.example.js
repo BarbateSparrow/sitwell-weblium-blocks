@@ -10,4 +10,11 @@ window.SLIPMAT_CONFIG = {
   MAPBOX_STYLE_STATIC: 'sitwell/clit05fs0004101pn3jv5g4jt',
   START_CENTER: [30.5234, 50.4501],
   START_ZOOM: 12,
+
+  // slipmat-order block only (non-secret):
+  // Leave ORDER_ENDPOINT empty to run submit in DRY-RUN (no POST, logs to console).
+  // Point it at a local Worker (`wrangler dev`) e.g. 'http://localhost:8787' to test end-to-end.
+  ORDER_ENDPOINT: '',
+  TURNSTILE_SITE_KEY: '', // empty in dev → the anti-spam widget is skipped
+  PRICE_UAH: 1000,
 };

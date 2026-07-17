@@ -1,0 +1,9 @@
+{
+  "mapbox_style_gl": "mapbox://styles/sitwell/clit05fs0004101pn3jv5g4jt",
+  "mapbox_style_static": "sitwell/clit05fs0004101pn3jv5g4jt",
+  "start_center": [30.5234, 50.4501],
+  "start_zoom": 12,
+  "price_uah": 1000,
+  "order_endpoint": "",
+  "turnstile_site_key": ""
+}

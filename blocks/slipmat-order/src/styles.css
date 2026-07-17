@@ -1,0 +1,328 @@
+/* === SLIPMAT ORDER — custom styles (dark Sitwell theme) === */
+:root {
+  --so-accent: #e8491d;          /* Sitwell red */
+  --so-fg: #ffffff;
+  --so-muted: #b3b3b3;
+  --so-field-bg: #1a1a1a;
+  --so-border: var(--so-accent);
+  --so-gap: 22px;
+}
+
+.so-wrap {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+  color: var(--so-fg);
+}
+.so-wrap *,
+.so-wrap *::before,
+.so-wrap *::after {
+  box-sizing: border-box;
+}
+
+/* ── Map section: full-width 3:1 banner with centered dot ─────── */
+.so-map-section {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  min-height: 240px;
+  overflow: hidden;
+}
+.so-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #101010;
+}
+.so-map .mapboxgl-canvas {
+  outline: none;
+}
+
+/* Center dot: white with a thin black ring, non-interactive */
+.so-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 3;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+/* Zoom controls (+/-) restyled to match the dark map + red accent */
+.so-map .mapboxgl-ctrl-group {
+  background: #141414;
+  border: 1px solid var(--so-accent);
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+}
+.so-map .mapboxgl-ctrl-group button {
+  width: 34px;
+  height: 34px;
+  background-color: transparent;
+}
+.so-map .mapboxgl-ctrl-group button + button {
+  border-top: 1px solid rgba(232, 73, 29, 0.5);
+}
+/* mapbox ships black icons — invert to white so they read on the dark button */
+.so-map .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
+  filter: invert(1);
+}
+.so-map .mapboxgl-ctrl-group button:hover {
+  background-color: var(--so-accent);
+}
+.so-map .mapboxgl-ctrl-group button:disabled .mapboxgl-ctrl-icon {
+  filter: invert(1);
+  opacity: 0.35;
+}
+
+/* ── Order section: preview | form ───────────────────────────── */
+.so-order-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+  padding: 40px 0;
+}
+
+/* Left column: round live preview */
+.so-preview-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.so-preview-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #101010;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.so-preview-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.so-spindle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.so-note {
+  margin: 20px 0 4px;
+  font-size: 14px;
+  color: var(--so-muted);
+}
+.so-price {
+  margin: 4px 0 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--so-fg);
+}
+
+/* Right column: form */
+.so-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--so-gap);
+}
+.so-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.so-field--qty {
+  max-width: 140px;
+}
+.so-label {
+  font-size: 15px;
+  color: var(--so-fg);
+}
+.so-label b {
+  color: var(--so-accent);
+  font-weight: 700;
+}
+.so-input {
+  width: 100%;
+  height: 52px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--so-fg);
+  background: var(--so-field-bg);
+  border: 1px solid var(--so-border);
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.so-textarea {
+  height: auto;
+  min-height: 52px;
+  resize: vertical;
+  line-height: 1.4;
+}
+.so-input::placeholder {
+  color: #6f6f6f;
+}
+.so-input:focus {
+  box-shadow: 0 0 0 2px rgba(232, 73, 29, 0.35);
+}
+.so-input.so-invalid {
+  border-color: #ff5252;
+  box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.3);
+}
+
+/* "Назва міста" geocoder styled to match .so-input on the dark theme */
+.so-geocoder-field .mapboxgl-ctrl-geocoder {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  background: var(--so-field-bg);
+  border: 1px solid var(--so-border);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: inherit;
+}
+.so-geocoder-field .mapboxgl-ctrl-geocoder--input {
+  height: 52px;
+  padding: 8px 14px 8px 42px;
+  font-size: 15px;
+  color: var(--so-fg);
+}
+.so-geocoder-field .mapboxgl-ctrl-geocoder--input::placeholder {
+  color: #6f6f6f;
+}
+.so-geocoder-field .mapboxgl-ctrl-geocoder--input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(232, 73, 29, 0.35);
+}
+.so-geocoder-field .mapboxgl-ctrl-geocoder--icon-search {
+  top: 15px;
+  left: 12px;
+  width: 22px;
+  height: 22px;
+  fill: #8a8a8a;
+}
+.so-geocoder-field .mapboxgl-ctrl-geocoder--icon-close {
+  fill: #b3b3b3;
+}
+.so-geocoder-field .mapboxgl-ctrl-geocoder--button {
+  background: transparent;
+}
+/* suggestions dropdown */
+.so-geocoder-field .suggestions {
+  background: #1a1a1a;
+  border: 1px solid var(--so-border);
+  border-radius: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.so-geocoder-field .suggestions > li > a {
+  color: var(--so-fg);
+}
+.so-geocoder-field .suggestions > li > a:hover,
+.so-geocoder-field .suggestions > .active > a {
+  background: rgba(232, 73, 29, 0.2);
+  color: var(--so-fg);
+}
+.so-geocoder-field.so-invalid .mapboxgl-ctrl-geocoder {
+  border-color: #ff5252;
+  box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.3);
+}
+
+/* honeypot — visually hidden but present for bots */
+.so-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.so-turnstile {
+  min-height: 0;
+}
+
+.so-error {
+  margin: 0;
+  color: #ff5252;
+  font-size: 14px;
+}
+
+.so-btn {
+  height: 56px;
+  border: 1px solid var(--so-accent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--so-fg);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.so-btn:hover:not(:disabled) {
+  background: var(--so-accent);
+}
+.so-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* thank-you */
+.so-thanks {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px 0;
+}
+.so-thanks-title {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--so-fg);
+}
+.so-thanks-text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--so-muted);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .so-order-section {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 28px 0;
+  }
+  .so-preview-wrap {
+    max-width: 360px;
+    margin: 0 auto;
+  }
+  .so-preview-col {
+    align-items: center;
+    text-align: center;
+  }
+  .so-map-section {
+    aspect-ratio: 16 / 9;
+  }
+}

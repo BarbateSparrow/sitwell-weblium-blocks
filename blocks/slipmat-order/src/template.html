@@ -1,0 +1,96 @@
+<!-- =========================================================
+     SLIPMAT ORDER  (Weblium custom code block)
+     Auto-generated from blocks/slipmat-order/src/.
+     Do NOT edit blocks/slipmat-order/dist/* by hand —
+     run `npm run build:order` after editing sources.
+
+     Weblium Custom Code has three tabs (HTML / CSS / JS):
+       - HTML tab  ← dist/weblium.html
+       - CSS tab   ← dist/weblium.css
+       - JS tab    ← dist/weblium.js
+     ========================================================= -->
+<style>
+{{STYLES}}
+</style>
+
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.2/mapbox-gl-geocoder.css">
+
+<div class="so-wrap">
+
+  <!-- ── Map section (full width, 3:1) ───────────────────────── -->
+  <div class="so-map-section">
+    <div id="so-map" class="so-map"></div>
+    <div class="so-dot" aria-hidden="true"></div>
+  </div>
+
+  <!-- ── Order section (round preview | form) ─────────────────── -->
+  <div class="so-order-section">
+    <div class="so-preview-col">
+      <div class="so-preview-wrap">
+        <img id="so-preview-img" class="so-preview-img" alt="">
+        <div class="so-spindle"></div>
+      </div>
+      <p class="so-note">За друк вашого міста ми не стягуємо додаткові платежі</p>
+      <p id="so-price" class="so-price">1000 грн</p>
+    </div>
+
+    <form id="so-form" class="so-form" novalidate>
+      <div class="so-field">
+        <span class="so-label">Назва міста<b>*</b></span>
+        <div id="so-city-geocoder" class="so-geocoder-field"></div>
+        <input id="so-city" name="city" type="hidden">
+      </div>
+
+      <label class="so-field">
+        <span class="so-label">Ім'я та прізвище отримувача<b>*</b></span>
+        <input id="so-name" name="name" class="so-input" type="text" autocomplete="name" required>
+      </label>
+
+      <label class="so-field">
+        <span class="so-label">Номер телефону<b>*</b></span>
+        <input id="so-phone" name="phone" class="so-input" type="tel" autocomplete="tel" required>
+      </label>
+
+      <label class="so-field">
+        <span class="so-label">Реквізити доставки<b>*</b></span>
+        <textarea id="so-delivery" name="delivery" class="so-input so-textarea" rows="2"
+          placeholder="Місто, № відділення Нової Пошти" required></textarea>
+      </label>
+
+      <label class="so-field so-field--qty">
+        <span class="so-label">Кількість<b>*</b></span>
+        <input id="so-qty" name="qty" class="so-input" type="number" min="1" max="99" step="1" value="1" required>
+      </label>
+
+      <!-- honeypot: hidden from users, tempting to bots -->
+      <div class="so-hp" aria-hidden="true">
+        <label>Не заповнюйте це поле
+          <input id="so-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </label>
+      </div>
+
+      <div id="so-turnstile" class="so-turnstile"></div>
+
+      <p id="so-error" class="so-error" role="alert" hidden></p>
+
+      <button id="so-submit" class="so-btn" type="submit">ЗАМОВИТИ СЛІПМАТ</button>
+    </form>
+
+    <!-- inline thank-you, shown on success instead of the form -->
+    <div id="so-thanks" class="so-thanks" hidden>
+      <h3 class="so-thanks-title">Дякуємо! Ми отримали ваше замовлення</h3>
+      <p class="so-thanks-text">Наш менеджер зв'яжеться з вами найближчим часом для підтвердження та оплати.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.2/mapbox-gl-geocoder.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<script>window.SLIPMAT_CONFIG = {{CONFIG_JSON}};</script>
+<script>
+{{SCRIPT}}
+</script>
